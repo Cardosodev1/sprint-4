@@ -28,9 +28,7 @@ export default function Container() {
                     <p className="px-4 text-center">Localize oficinas próximas e receba orçamentos de forma rápida.</p>
                 </li>
             </ul>
-            <Link href="/orcamento" className="m-auto mb-20 bg-blue-500 rounded p-3 text-white hover:bg-blue-600 transition">
-                    Obter Orçamento
-            </Link>
+            <Link href="/orcamento" className="m-auto mb-20 bg-blue-500 rounded p-3 text-white hover:bg-blue-600 transition">Obter Orçamento</Link>
         </section>
     );
 }

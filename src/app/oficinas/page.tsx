@@ -36,8 +36,8 @@ export default function Oficinas() {
     return (
         <>
             <Header />
-            <div className="flex flex-col items-center justify-center p-6">
-                <h2 className="text-2xl font-bold mb-5">Oficinas Próximas</h2>
+            <div className="flex flex-col items-center justify-center h-screen">
+                <h2 className="text-3xl font-bold mb-5">Oficinas Próximas</h2>
                 <div className="w-full max-w-2xl">
                     <ul className="space-y-6">
                         {oficinasDummys.map((oficina) => (
