@@ -10,20 +10,24 @@ export default function Parceiros() {
                 Contamos com o apoio de grandes nomes como Porto Seguro e FIAP, fortalecendo nossa missão de oferecer soluções automotivas confiáveis e inovadoras para você.
             </p>
             <div className="flex flex-wrap justify-center gap-16">
-                <Image
-                    src={LogoPorto}
-                    alt="Logo Porto Seguro"
-                    width={200}
-                    height={50}
-                    className="hover:scale-105 transition-transform duration-300"
-                />
-                <Image
-                    src={LogoFiap}
-                    alt="Logo FIAP"
-                    width={200}
-                    height={50}
-                    className="hover:scale-105 transition-transform duration-300"
-                />
+                <a href="https://www.portoseguro.com.br" target="_blank">    
+                    <Image
+                        src={LogoPorto}
+                        alt="Logo Porto Seguro"
+                        width={200}
+                        height={50}
+                        className="hover:scale-105 transition-transform duration-300"
+                        />
+                    </a>
+                <a href="https://www.fiap.com.br" target="_blank">
+                    <Image
+                        src={LogoFiap}
+                        alt="Logo FIAP"
+                        width={200}
+                        height={50}
+                        className="hover:scale-105 transition-transform duration-300"
+                    />
+                </a>    
             </div>
         </section>
     )
