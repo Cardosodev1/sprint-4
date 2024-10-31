@@ -11,7 +11,7 @@ export default function Localizacao() {
                 <Link href="/oficinas" className=" bg-blue-500 rounded p-3 text-white hover:bg-blue-600 transition lg:mb-10">Ver Oficinas</Link>
             </div>
             <div className="lg:w-1/2">
-                <Image src={Mapa} alt="Mapa de Localização" className="my-10 w-full h-auto" />
+                <Image src={Mapa} alt="Mapa de Localização" className="my-10 w-full h-auto rounded-2xl" />
             </div>
         </section>
     );

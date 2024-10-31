@@ -1,104 +1,67 @@
 "use client"
 
 import Button from "@/components/Button/index"
-import Input from "@/components/Input/index"
-import { useForm, SubmitHandler, Controller, FieldErrors } from "react-hook-form"
-import { yupResolver } from "@hookform/resolvers/yup"
-import { useRef, useState, useMemo } from 'react'
-import * as yup from "yup"
+import { useEffect, useState } from 'react'
 
-type OrcamentoFormData = {
+type OrcamentoData = {
   veiculo: string
+  modelo: string
+  ano: string
+  problema: string
   servico: string
+  valor: string
 }
 
-const schema = yup
-  .object({
-    veiculo: yup.string().required('O veículo é obrigatório'),
-    servico: yup.string().required('O serviço necessário é obrigatório'),
-  })
-  .required()
-
 export default function OrcamentoForm() {
-  const formRef = useRef<HTMLFormElement>(null)
   const [loading, setLoading] = useState(false)
-  const { control, handleSubmit, formState } = useForm<OrcamentoFormData>({
-    defaultValues: {
-      veiculo: '',
-      servico: ''
-    },
-    resolver: yupResolver(schema),
-    mode: "onChange"
-  })
-  const { errors, isValid } = useMemo(() => formState, [formState])
+  const [orcamentoData, setOrcamentoData] = useState<OrcamentoData | null>(null)
 
-  async function submitErrorCallback() {
-    // TODO: Tratar erros
-  }
-
-  async function submitCallback(values: OrcamentoFormData) {
-    setLoading(true)
-
-    // Verifica se o formulário é válido
-    // TODO: Outros erros?
-    if (!isValid) {
-      await submitErrorCallback()
-      setLoading(false)
-      return
+  useEffect(() => {
+    // Simulação de dados obtidos do diagnóstico
+    const diagnosticoData: OrcamentoData = {
+      veiculo: "Toyota",
+      modelo: "Corolla",
+      ano: "2021",
+      problema: "Barulho no motor",
+      servico: "Substituição de peças do motor",
+      valor: "R$ 1.500,00"
     }
+    setOrcamentoData(diagnosticoData)
+  }, [])
 
-    // TODO: Envie os dados do formulário para a API
-    console.log(values)
-
-    // Simula uma requisição à API
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setLoading(false)
+  if (loading || !orcamentoData) {
+    return <div>Carregando orçamento...</div>
   }
 
   return (
-    <form
-      className="w-full flex flex-col gap-8"
-      onSubmit={handleSubmit(submitCallback)}
-      ref={formRef}
-      noValidate
-    >
-      <Controller
-        name="veiculo"
-        control={control}
-        render={({ field }) => (
-          <Input
-            label='Veículo'
-            type='text'
-            id='veiculo'
-            placeholder='Digite o modelo do veículo'
-            readOnly={loading}
-            customError={errors?.veiculo?.message}
-            {...field}
-          />
-        )}
-      />
-      <Controller
-        name="servico"
-        control={control}
-        render={({ field }) => (
-          <Input
-            label='Serviço Necessário'
-            type='text'
-            id='servico'
-            placeholder='Descreva o serviço necessário'
-            readOnly={loading}
-            customError={errors?.servico?.message}
-            {...field}
-          />
-        )}
-      />
-      <Button type='submit' disabled={!formRef.current || loading || !isValid}>
-        {
-          loading
-            ? 'Carregando...'
-            : 'Continuar'
-        }
+    <div className="w-full flex flex-col gap-4">
+      <div>
+        <label className="block text-sm font-bold mb-1">Veículo</label>
+        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.veiculo}</p>
+      </div>
+      <div>
+        <label className="block text-sm font-bold mb-1">Modelo</label>
+        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.modelo}</p>
+      </div>
+      <div>
+        <label className="block text-sm font-bold mb-1">Ano</label>
+        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.ano}</p>
+      </div>
+      <div>
+        <label className="block text-sm font-bold mb-1">Problema</label>
+        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.problema}</p>
+      </div>
+      <div>
+        <label className="block text-sm font-bold mb-1">Descrição do Serviço Necessário</label>
+        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.servico}</p>
+      </div>
+      <div>
+        <label className="block text-sm font-bold mb-1">Valor Estimado</label>
+        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.valor}</p>
+      </div>
+      <Button type="button" onClick={() => alert("Orçamento concluído!")}>
+        Concluir Orçamento
       </Button>
-    </form>
+    </div>
   )
 }
