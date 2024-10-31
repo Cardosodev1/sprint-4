@@ -2,100 +2,104 @@
 
 import Button from "@/components/Button/index"
 import Input from "@/components/Input/index"
-import { useForm, SubmitHandler, Controller, FieldErrors } from "react-hook-form"
-import { yupResolver } from "@hookform/resolvers/yup"
-import { useRef, useState, useEffect, useMemo } from 'react'
-import * as yup from "yup"
-
-type LoginFormData = {
-  email: string
-  password: string
-}
-
-const schema = yup
-  .object({
-    email: yup.string().email('E-mail inválido').required('O e-mail é obrigatório'),
-    password: yup.string().min(6, 'A senha deve ter no mínimo 6 caracteres').required('A senha é obrigatória'),
-  })
-  .required()
+import useForm, { FormState } from "@/hooks/use-form/index"
+import { setCookie } from "@/utils/Cookie/index"
+import { useRouter } from "next/navigation"
+import { useRef } from 'react'
 
 export default function LoginForm() {
+  const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
-  const [loading, setLoading] = useState(false)
-  const { control, handleSubmit, formState } = useForm<LoginFormData>({
-    defaultValues: {
-      email: '',
-      password: ''
-    },
-    resolver: yupResolver(schema),
-    mode: "onChange"
-  })
-  const { errors, isValid } = useMemo(() => formState, [formState])
-
-  async function submitErrorCallback() {
-    // TODO: Tratar erros
+  const initialLoginForm = {
+    email: '',
+    senha: ''
   }
+  const {
+    data: {
+      email,
+      senha
+    },
+    loadingSubmit,
+    handleChange,
+    handleSubmit,
+    errorsCount
+  } = useForm(
+    formRef,
+    initialLoginForm,
+    submitCallback,
+    submitErrorCallback
+  )
 
-  async function submitCallback(values: LoginFormData) {
-    setLoading(true)
-
-    // Verifica se o formulário é válido
-    // TODO: Outros erros?
-    if (!isValid) {
-      await submitErrorCallback()
-      setLoading(false)
-      return
+  async function submitErrorCallback(error: Error) {
+    if (error.cause && Object.keys(error.cause).length) {
+      let message = 'Erro ao realizar login:\n\n'
+      for (const key in error.cause) {
+        const causes = error.cause as { [key: string]: string }
+        message += `- ${causes[key]}\n`
+      }
+      return window.alert(message)
     }
 
-    // TODO: Envie os dados do formulário para a API
-    console.log(values)
+    return window.alert(error.message)
+  }
 
-    // Simula uma requisição à API
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setLoading(false)
+  async function submitCallback(values: FormState) {
+    try {
+      const request = await fetch(`/api/login?email=${encodeURIComponent(values.email)}&senha=${encodeURIComponent(values.senha)}`, {
+        method: 'GET',
+      })
+      const response = await request.json()
+
+      if (!response.token) {
+        throw new Error(response.message)
+      }
+
+      setCookie('token', response.token)
+      localStorage.setItem('token', response.token)
+      router.push('/')
+    } catch (error) {
+      if (error instanceof Error) {
+        return submitErrorCallback(error)
+      }
+      return submitErrorCallback(new Error('Erro ao realizar login'))
+    }
   }
 
   return (
     <form
       className="w-full flex flex-col gap-2"
-      onSubmit={handleSubmit(submitCallback)}
+      onSubmit={handleSubmit}
       ref={formRef}
       noValidate
     >
-      <Controller
-        name="email"
-        control={control}
-        render={({ field }) => (
-          <Input
-            label='E-mail'
-            type='email'
-            id='email'
-            placeholder='E-mail'
-            readOnly={loading}
-            customError={errors?.email?.message}
-            {...field}
-          />
-        )}
+      <Input
+        label='E-mail'
+        type='email'
+        name='email'
+        id='email'
+        placeholder='E-mail'
+        value={email}
+        handleChange={(_, e) => handleChange(e)}
+        readOnly={loadingSubmit}
+        autoComplete="email"
+        required
       />
-      <Controller
-        name="password"
-        control={control}
-        render={({ field }) => (
-          <Input
-            label='Senha'
-            type='password'
-            id='password'
-            placeholder='Senha'
-            minLength={6}
-            readOnly={loading}
-            customError={errors?.password?.message}
-            {...field}
-          />
-        )}
+      <Input
+        label='Senha'
+        type='password'
+        name='senha'
+        id='senha'
+        placeholder='Senha'
+        minLength={6}
+        value={senha}
+        handleChange={(_, e) => handleChange(e)}
+        readOnly={loadingSubmit}
+        autoComplete='current-password'
+        required
       />
-      <Button type='submit' disabled={!formRef.current || loading || !isValid}>
+      <Button type='submit' disabled={loadingSubmit || !!errorsCount || !formRef.current}>
         {
-          loading
+          loadingSubmit
             ? 'Carregando...'
             : 'Entrar'
         }
