@@ -35,8 +35,8 @@ export default function Oficinas() {
                 }
                 const data: OficinaProps[] = await response.json()
                 setOficinas(data)
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Erro desconhecido')
+            } catch (error) {
+                setError(error instanceof Error ? error.message : 'Erro desconhecido')
             } finally {
                 setLoading(false)
             }

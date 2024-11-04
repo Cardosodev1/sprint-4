@@ -1,67 +1,99 @@
 "use client"
 
-import Button from "@/components/Button/index"
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react"
 
-type OrcamentoData = {
-  veiculo: string
-  modelo: string
-  ano: string
-  problema: string
-  servico: string
-  valor: string
+type DiagnosticoData = {
+  marcaCarro: string
+  modeloCarro: string
+  anoCarro: string
+  resultado: string
 }
 
 export default function OrcamentoForm() {
   const [loading, setLoading] = useState(false)
-  const [orcamentoData, setOrcamentoData] = useState<OrcamentoData | null>(null)
+  const [diagnosticoData, setDiagnosticoData] = useState<DiagnosticoData | null>(null)
 
   useEffect(() => {
-    // Simulação de dados obtidos do diagnóstico
-    const diagnosticoData: OrcamentoData = {
-      veiculo: "Toyota",
-      modelo: "Corolla",
-      ano: "2021",
-      problema: "Barulho no motor",
-      servico: "Substituição de peças do motor",
-      valor: "R$ 1.500,00"
+    async function fetchDiagnosticoData() {
+      try {
+        setLoading(true)
+        const response = await fetch(`http://localhost:8080/diagnosticos/25`)
+        if (!response.ok) {
+          throw new Error('Erro ao buscar diagnóstico')
+        }
+        const data = await response.json()
+        setDiagnosticoData(data)
+      } catch (error) {
+        console.error("Erro ao buscar dados do diagnóstico:", error)
+      } finally {
+        setLoading(false)
+      }
     }
-    setOrcamentoData(diagnosticoData)
+    fetchDiagnosticoData()
   }, [])
 
-  if (loading || !orcamentoData) {
-    return <div>Carregando orçamento...</div>
+  const gerarOrcamentoSugerido = (descricao: string): { descricaoServico: string; valor: number } => {
+    if (descricao.includes("motor")) {
+      return {
+        descricaoServico: "Reparo no sistema do motor, incluindo verificação de ignição e combustível",
+        valor: 1200
+      }
+    } else if (descricao.includes("freio")) {
+      return {
+        descricaoServico: "Manutenção nos freios, incluindo troca de pastilhas e verificação de fluido",
+        valor: 450
+      }
+    } else if (descricao.includes("bateria")) {
+      return {
+        descricaoServico: "Substituição da bateria e verificação dos cabos de conexão",
+        valor: 300
+      }
+    } else if (descricao.includes("suspensão")) {
+      return {
+        descricaoServico: "Reparo na suspensão, incluindo troca de amortecedores e revisão completa",
+        valor: 800
+      }
+    } else {
+      return {
+        descricaoServico: "Inspeção detalhada para diagnóstico completo",
+        valor: 200
+      }
+    }
   }
+
+  if (loading || !diagnosticoData) {
+    return <div>Carregando dados do diagnóstico...</div>
+  }
+
+  const { resultado } = diagnosticoData
+  const { descricaoServico, valor } = gerarOrcamentoSugerido(resultado)
 
   return (
     <div className="w-full flex flex-col gap-4">
       <div>
         <label className="block text-sm font-bold mb-1">Veículo</label>
-        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.veiculo}</p>
+        <p className="p-3 border rounded-md bg-gray-200">{diagnosticoData.marcaCarro}</p>
       </div>
       <div>
         <label className="block text-sm font-bold mb-1">Modelo</label>
-        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.modelo}</p>
+        <p className="p-3 border rounded-md bg-gray-200">{diagnosticoData.modeloCarro}</p>
       </div>
       <div>
         <label className="block text-sm font-bold mb-1">Ano</label>
-        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.ano}</p>
+        <p className="p-3 border rounded-md bg-gray-200">{diagnosticoData.anoCarro}</p>
       </div>
       <div>
         <label className="block text-sm font-bold mb-1">Problema</label>
-        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.problema}</p>
+        <p className="p-3 border rounded-md bg-gray-200">{diagnosticoData.resultado}</p>
       </div>
       <div>
-        <label className="block text-sm font-bold mb-1">Descrição do Serviço Necessário</label>
-        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.servico}</p>
+        <label className="block text-sm font-bold mb-1">Solução</label>
+        <p className="p-3 border rounded-md bg-gray-200">{descricaoServico}</p>
       </div>
       <div>
-        <label className="block text-sm font-bold mb-1">Valor Estimado</label>
-        <p className="p-3 border rounded-md bg-gray-200">{orcamentoData.valor}</p>
+        <label className="block text-sm font-bold mb-1">Valor</label>
+        <p className="p-3 border rounded-md bg-gray-200">R$ {valor}</p>
       </div>
-      <Button type="button" onClick={() => alert("Orçamento concluído!")}>
-        Concluir Orçamento
-      </Button>
     </div>
   )
 }
