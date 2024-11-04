@@ -5,7 +5,7 @@ import Input from "@/components/Input/index"
 import useForm, { FormState } from "@/hooks/use-form/index"
 import { setCookie } from "@/utils/Cookie/index"
 import { useRouter } from "next/navigation"
-import { useRef } from 'react'
+import { useRef } from "react"
 
 export default function LoginForm() {
   const router = useRouter()
@@ -57,6 +57,7 @@ export default function LoginForm() {
       setCookie('token', response.token)
       localStorage.setItem('token', response.token)
       router.push('/')
+
     } catch (error) {
       if (error instanceof Error) {
         return submitErrorCallback(error)

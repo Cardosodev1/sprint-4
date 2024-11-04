@@ -1,138 +1,129 @@
-'use client'
+"use client"
 
-import Button from "@/components/Button/index";
-import Input from "@/components/Input/index";
-import { useForm, SubmitHandler, Controller, FieldErrors } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import { useRef, useState, useEffect, useMemo } from 'react';
-import * as yup from "yup";
-
-type RegisterFormData = {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
-
-const schema = yup.object({
-  name: yup.string().required('O nome é obrigatório'),
-  email: yup.string().email('E-mail inválido').required('O e-mail é obrigatório'),
-  password: yup.string().min(6, 'A senha deve ter no mínimo 6 caracteres').required('A senha é obrigatória'),
-  confirmPassword: yup.string()
-    .oneOf([yup.ref('password')], 'As senhas devem coincidir')
-    .required('Confirmação de senha é obrigatória'),
-}).required();
+import Button from "@/components/Button/index"
+import Input from "@/components/Input/index"
+import useForm, { FormState } from "@/hooks/use-form/index"
+import { setCookie } from "@/utils/Cookie/index"
+import { useRouter } from "next/navigation"
+import { useRef } from "react"
 
 export default function RegisterForm() {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [loading, setLoading] = useState(false);
-  const { control, handleSubmit, formState } = useForm<RegisterFormData>({
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: ''
+  const router = useRouter()
+  const formRef = useRef<HTMLFormElement>(null)
+  const initialRegisterForm = {
+    nome: '',
+    email: '',
+    senha: ''
+  };
+
+  const {
+    data: { 
+      nome,
+      email, 
+      senha 
     },
-    resolver: yupResolver(schema),
-    mode: "onChange"
-  });
-  const { errors, isValid } = useMemo(() => formState, [formState]);
+    loadingSubmit,
+    handleChange,
+    handleSubmit,
+    errorsCount,
+  } = useForm(
+    formRef, 
+    initialRegisterForm, 
+    submitCallback, 
+    submitErrorCallback
+  )
 
-  async function submitErrorCallback() {
-    // TODO: Tratar erros
-  }
-
-  async function submitCallback(values: RegisterFormData) {
-    setLoading(true);
-
-    if (!isValid) {
-      await submitErrorCallback();
-      setLoading(false);
-      return;
+  async function submitErrorCallback(error: Error) {
+    if (error.cause && Object.keys(error.cause).length) {
+      let message = "Erro ao realizar registro:\n\n"
+      for (const key in error.cause) {
+        const causes = error.cause as { [key: string]: string }
+        message += `- ${causes[key]}\n`
+      }
+      return window.alert(message)
     }
 
-    // TODO: Envie os dados do formulário para a API
-    console.log(values);
+    return window.alert(error.message)
+  }
 
-    // Simula uma requisição à API
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setLoading(false);
+  async function submitCallback(values: FormState) {
+    try {
+      const request = await fetch(`/api/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: values.nome,
+          email: values.email,
+          senha: values.senha,
+        }),
+      })
+
+      const response = await request.json();
+
+      if (!response.token) {
+        throw new Error(response.message)
+      }
+
+      setCookie('token', response.token)
+      localStorage.setItem('token', response.token)
+      router.push('/')
+
+    } catch (error) {
+      if (error instanceof Error) {
+        return submitErrorCallback(error)
+      }
+      return submitErrorCallback(new Error('Erro ao realizar registro'))
+    }
   }
 
   return (
     <form
       className="w-full flex flex-col gap-2"
-      onSubmit={handleSubmit(submitCallback)}
+      onSubmit={handleSubmit}
       ref={formRef}
       noValidate
     >
-      <Controller
-        name="name"
-        control={control}
-        render={({ field }) => (
-          <Input
-            label='Nome'
-            type='text'
-            id='name'
-            placeholder='Nome completo'
-            readOnly={loading}
-            customError={errors?.name?.message}
-            {...field}
-          />
-        )}
+      <Input
+        label="Nome"
+        type="text"
+        name="nome"
+        id="nome"
+        placeholder="Nome completo"
+        value={nome}
+        handleChange={(_, e) => handleChange(e)}
+        readOnly={loadingSubmit}
+        required
       />
-      <Controller
+      <Input
+        label="E-mail"
+        type="email"
         name="email"
-        control={control}
-        render={({ field }) => (
-          <Input
-            label='E-mail'
-            type='email'
-            id='email'
-            placeholder='E-mail'
-            readOnly={loading}
-            customError={errors?.email?.message}
-            {...field}
-          />
-        )}
+        id="email"
+        placeholder="E-mail"
+        value={email}
+        handleChange={(_, e) => handleChange(e)}
+        readOnly={loadingSubmit}
+        autoComplete="email"
+        required
       />
-      <Controller
-        name="password"
-        control={control}
-        render={({ field }) => (
-          <Input
-            label='Senha'
-            type='password'
-            id='password'
-            placeholder='Senha'
-            minLength={6}
-            readOnly={loading}
-            customError={errors?.password?.message}
-            {...field}
-          />
-        )}
+      <Input
+        label="Senha"
+        type="password"
+        name="senha"
+        id="senha"
+        placeholder="Senha"
+        minLength={6}
+        value={senha}
+        handleChange={(_, e) => handleChange(e)}
+        readOnly={loadingSubmit}
+        autoComplete="new-password"
+        required
       />
-      <Controller
-        name="confirmPassword"
-        control={control}
-        render={({ field }) => (
-          <Input
-            label='Confirmar Senha'
-            type='password'
-            id='confirmPassword'
-            placeholder='Confirme a senha'
-            minLength={6}
-            readOnly={loading}
-            customError={errors?.confirmPassword?.message}
-            {...field}
-          />
-        )}
-      />
-      <Button type='submit' disabled={!formRef.current || loading || !isValid}>
+      <Button type="submit" disabled={loadingSubmit || !!errorsCount || !formRef.current}>
         {
-          loading
-            ? 'Carregando...'
-            : 'Registrar'
+          loadingSubmit 
+            ? "Carregando..." 
+            : "Registrar"
         }
       </Button>
     </form>
