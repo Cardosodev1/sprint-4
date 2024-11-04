@@ -1,45 +1,42 @@
 "use client"
 
 import Button from "@/components/Button/index"
-import { useForm, Controller } from "react-hook-form"
-import { yupResolver } from "@hookform/resolvers/yup"
-import { useRef, useState, useEffect } from 'react'
-import * as yup from "yup"
-
-type DiagnosticoFormData = {
-  marca: string
-  modelo: string
-  ano: string
-  problema: string
-}
-
-const schema = yup.object({
-  marca: yup.string().required('A marca é obrigatória'),
-  modelo: yup.string().required('O modelo é obrigatório'),
-  ano: yup.string().required('O ano é obrigatório'),
-  problema: yup.string().required('Selecione um problema')
-}).required()
+import useForm, { FormState } from "@/hooks/use-form/index"
+import { setCookie } from "@/utils/Cookie/index"
+import { useRouter } from "next/navigation"
+import { useRef, useEffect, useState } from "react"
+import { useForm as useReactHookForm, Controller } from "react-hook-form"
 
 export default function DiagnosticoForm() {
+  const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
-  const [loading, setLoading] = useState(false)
+  const initialDiagnosticoForm = {
+    marca: '',
+    modelo: '',
+    ano: '',
+    problema: ''
+  }
+
   const [modelos, setModelos] = useState<string[]>([])
-  const { control, handleSubmit, formState, watch } = useForm<DiagnosticoFormData>({
-    defaultValues: {
-      marca: '',
-      modelo: '',
-      ano: '',
-      problema: ''
-    },
-    resolver: yupResolver(schema),
-    mode: "onChange"
+
+  const { control, setValue, watch } = useReactHookForm({
+    defaultValues: initialDiagnosticoForm
   })
 
-  const { errors, isValid } = formState
-  const marcaSelecionada = watch('marca')
+  const marca = watch('marca')
+
+  const {
+    loadingSubmit,
+    handleSubmit,
+    errorsCount,
+  } = useForm(
+    formRef,
+    initialDiagnosticoForm,
+    submitCallback,
+    submitErrorCallback
+  )
 
   const fetchModelosPorMarca = async (marca: string) => {
-    setLoading(true)
     const modelosPorMarca: { [key: string]: string[] } = {
       Toyota: ["Corolla", "Camry", "Yaris", "Hilux", "Prius"],
       Ford: ["Fiesta", "Focus", "Mustang", "EcoSport", "Ranger"],
@@ -49,27 +46,73 @@ export default function DiagnosticoForm() {
       Hyundai: ["HB20", "Creta", "Tucson", "Santa Fe", "Elantra"],
       Renault: ["Duster", "Sandero", "Kwid", "Logan", "Captur"]
     }
-    setModelos(modelosPorMarca[marca] || [])
-    setLoading(false)
+    return modelosPorMarca[marca] || []
   }
 
   useEffect(() => {
-    if (marcaSelecionada) {
-      fetchModelosPorMarca(marcaSelecionada)
-    }
-  }, [marcaSelecionada])
+    const updateModelos = async () => {
+      if (marca) {
+        const modelosPorMarca = await fetchModelosPorMarca(marca);
+        setModelos(modelosPorMarca);
+        setValue('modelo', '')
+      } else {
+        setModelos([]);
+        setValue('modelo', '')
+      }
+    };
 
-  const submitCallback = async (values: DiagnosticoFormData) => {
-    setLoading(true)
-    console.log(values)
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setLoading(false)
+    updateModelos();
+  }, [marca, setValue]);
+
+  async function submitErrorCallback(error: Error) {
+    if (error.cause && Object.keys(error.cause).length) {
+      let message = "Erro ao enviar o diagnóstico:\n\n"
+      for (const key in error.cause) {
+        const causes = error.cause as { [key: string]: string }
+        message += `- ${causes[key]}\n`
+      }
+      return window.alert(message)
+    }
+
+    return window.alert(error.message)
   }
+
+  async function submitCallback(values: FormState) {
+    try {
+      const request = await fetch(`/api/diagnostico`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          marca: values.marca,
+          modelo: values.modelo,
+          ano: values.ano,
+          problema: values.problema,
+        }),
+      })
+
+      const response = await request.json()
+
+      if (!response.success) {
+        throw new Error(response.message)
+      }
+
+      setCookie('diagnostico', JSON.stringify(values))
+      router.push('/')
+
+    } catch (error) {
+      if (error instanceof Error) {
+        return submitErrorCallback(error)
+      }
+      return submitErrorCallback(new Error('Erro ao enviar o diagnóstico'))
+    }
+  }
+
+  const anos = Array.from({ length: 2024 - 2000 + 1 }, (_, i) => (2024 - i).toString())
 
   return (
     <form
-      className="w-full flex flex-col gap-4"
-      onSubmit={handleSubmit(submitCallback)}
+      className="w-full flex flex-col gap-2"
+      onSubmit={handleSubmit}
       ref={formRef}
       noValidate
     >
@@ -78,10 +121,15 @@ export default function DiagnosticoForm() {
         control={control}
         render={({ field }) => (
           <select
-            id="marca"
-            className={`p-3 border rounded-md ${errors?.marca ? 'border-red-500' : 'border-gray-300'} h-12`}
             {...field}
-            disabled={loading}
+            id="marca"
+            className="p-3 border rounded-md h-12"
+            onChange={(e) => {
+              field.onChange(e)
+              setValue('marca', e.target.value)
+              setValue('modelo', '')
+            }}
+            disabled={loadingSubmit}
           >
             <option value="" disabled>Selecione a marca</option>
             <option value="Toyota">Toyota</option>
@@ -94,17 +142,16 @@ export default function DiagnosticoForm() {
           </select>
         )}
       />
-      {errors?.marca && <span className="text-red-500 text-sm">{errors.marca.message}</span>}
 
       <Controller
         name="modelo"
         control={control}
         render={({ field }) => (
           <select
-            id="modelo"
-            className={`p-3 border rounded-md ${errors?.modelo ? 'border-red-500' : 'border-gray-300'} h-12`}
             {...field}
-            disabled={!marcaSelecionada || loading}
+            id="modelo"
+            className="p-3 border rounded-md h-12"
+            disabled={loadingSubmit || modelos.length === 0}
           >
             <option value="" disabled>Selecione o modelo</option>
             {modelos.map((modelo, index) => (
@@ -113,36 +160,34 @@ export default function DiagnosticoForm() {
           </select>
         )}
       />
-      {errors?.modelo && <span className="text-red-500 text-sm">{errors.modelo.message}</span>}
 
       <Controller
         name="ano"
         control={control}
         render={({ field }) => (
           <select
-            id="ano"
-            className={`p-3 border rounded-md ${errors?.ano ? 'border-red-500' : 'border-gray-300'} h-12`}
             {...field}
-            disabled={loading}
+            id="ano"
+            className="p-3 border rounded-md h-12"
+            disabled={loadingSubmit}
           >
             <option value="" disabled>Selecione o ano</option>
-            {[2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009, 2008, 2007, 2006, 2005, 2004, 2003, 2002, 2001, 2000].map(ano => (
-              <option key={ano} value={ano.toString()}>{ano}</option>
+            {anos.map((ano, index) => (
+              <option key={index} value={ano}>{ano}</option>
             ))}
           </select>
         )}
       />
-      {errors?.ano && <span className="text-red-500 text-sm">{errors.ano.message}</span>}
 
       <Controller
         name="problema"
         control={control}
         render={({ field }) => (
           <select
-            id="problema"
-            className={`p-3 border rounded-md ${errors?.problema ? 'border-red-500' : 'border-gray-300'} h-12`}
             {...field}
-            disabled={loading}
+            id="problema"
+            className="p-3 border rounded-md h-12"
+            disabled={loadingSubmit}
           >
             <option value="" disabled>Selecione um problema</option>
             <option value="barulho_motor">Barulho no motor</option>
@@ -154,10 +199,9 @@ export default function DiagnosticoForm() {
           </select>
         )}
       />
-      {errors?.problema && <span className="text-red-500 text-sm">{errors.problema.message}</span>}
 
-      <Button type='submit' disabled={!formRef.current || loading || !isValid}>
-        {loading ? 'Carregando...' : 'Continuar'}
+      <Button type="submit" disabled={loadingSubmit || !!errorsCount || !formRef.current}>
+        {loadingSubmit ? "Carregando..." : "Enviar Diagnóstico"}
       </Button>
     </form>
   )
