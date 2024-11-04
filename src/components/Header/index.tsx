@@ -1,9 +1,24 @@
+"use client"
+
 import Image from 'next/image'
 import Logo from './assets/Logo.png'
 import Usuario from './assets/Usuário.svg'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 export default function Header() {
+    const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+    useEffect(() => {
+        const token = localStorage.getItem('token')
+        setIsAuthenticated(!!token)
+    }, [])
+
+    const handleLogout = () => {
+        localStorage.removeItem('token')
+        setIsAuthenticated(false)
+    }
+
     return (
         <header className="flex justify-between bg-white items-center p-3 lg:justify-around">
             <div className="flex items-center">
@@ -24,10 +39,14 @@ export default function Header() {
                     </li>
                 </ul>
             </nav>
-            <Link href="/login" className="flex items-center gap-3 hover:text-blue-500">
+            <div className="flex items-center gap-3 hover:text-blue-500">
                 <Image src={Usuario} alt="imagem usuário" className="w-6 h-6 md:w-auto md:h-auto"/>
-                <p className="text-sm md:text-base">Fazer login</p>
-            </Link>
+                {isAuthenticated ? (
+                    <p className="text-sm md:text-base cursor-pointer" onClick={handleLogout}>Sair</p>
+                ) : (
+                    <Link href="/login" className="text-sm md:text-base">Fazer login</Link>
+                )}
+            </div>
         </header>
     )
 }

@@ -3,6 +3,7 @@
 import Footer from "@/components/Footer"
 import Header from "@/components/Header"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 
 interface OficinaProps {
     id: number;
@@ -16,6 +17,14 @@ export default function Oficinas() {
     const [oficinas, setOficinas] = useState<OficinaProps[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const router = useRouter()
+
+    useEffect(() => {
+        const token = localStorage.getItem('token')
+        if (!token) {
+            router.push('/login')
+        }
+    }, [router])
 
     useEffect(() => {
         const fetchOficinas = async () => {

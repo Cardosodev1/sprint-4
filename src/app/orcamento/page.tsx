@@ -1,8 +1,21 @@
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
-import OrcamentoForm from "./orcamento-form/index";
+"use client"
+
+import Footer from "@/components/Footer"
+import Header from "@/components/Header"
+import OrcamentoForm from "./orcamento-form/index"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function OrcamentoPage() {
+    const router = useRouter()
+
+    useEffect(() => {
+        const token = localStorage.getItem('token')
+        if (!token) {
+            router.push('/login')
+        }
+    }, [router])
+    
     return (
         <>
             <Header />
