@@ -1,14 +1,14 @@
 import { ChangeEvent, FormEvent, RefObject, useCallback, useEffect, useState } from 'react'
 
 export interface FormState {
-  [key: string]: any
+  [key: string]: string | number | boolean;
 }
 
 interface ErrorsState {
   [key: string]: string
 }
 
-type SetCustomErrorsFunction = (target: HTMLFormElement) => ErrorsState
+type SetCustomErrorsFunction = (target: HTMLFormElement) => ErrorsState | undefined
 
 type SubmitCallbackFunction = (values: FormState, target?: FormEvent<HTMLFormElement>) => Promise<void>
 
