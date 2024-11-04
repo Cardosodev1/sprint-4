@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 
 type LoginResponse = {
-  token?: string;
-  message?: string;
+  token?: string
+  message?: string
 }
 
 interface UsuarioProps {
-  email: string;
-  senha: string;
+  codigo: number
+  email: string
+  senha: string
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse<LoginResponse>> {
@@ -36,7 +37,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<LoginRespo
     const user = users.find(user => user.email === email && user.senha === senha)
 
     if (user) {
-      return NextResponse.json({ token: `token-for-${email}` })
+      return NextResponse.json({ 
+        token: `token-for-${email}`,
+        codigo: user.codigo,
+      })
     }
 
     return NextResponse.json(

@@ -50,12 +50,13 @@ export default function LoginForm() {
       })
       const response = await request.json()
 
-      if (!response.token) {
+      if (!response.token || !response.codigo) {
         throw new Error(response.message)
       }
 
       setCookie('token', response.token)
       localStorage.setItem('token', response.token)
+      localStorage.setItem('codigo', response.codigo)
       router.push('/')
 
     } catch (error) {

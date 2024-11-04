@@ -12,7 +12,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (!nome || !email || !senha) {
       return NextResponse.json(
-        { message: "Nome, e-mail e senha são obrigatórios." },
+        { message: "Todos os campos são obrigatórios." },
         { status: 400 }
       )
     }

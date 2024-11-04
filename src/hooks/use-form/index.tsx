@@ -100,7 +100,7 @@ export default function useForm(
     setLoading(false)
   }, [loading, handleErros, submitCallback, data, errorCallback])
 
-  const handleChange = useCallback(async (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setData((oldData) => {
       return {
